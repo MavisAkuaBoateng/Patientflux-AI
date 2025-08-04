@@ -1,43 +1,74 @@
-"use client";
-import { useState } from "react";
-import axios from "axios";
+'use client';
+import { useState } from 'react';
 
 export default function AIAssistant() {
-  const [question, setQuestion] = useState("");
-  const [answer, setAnswer] = useState(null);
+  const [input, setInput] = useState('');
+  const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const askAI = async () => {
-    if (!question.trim()) return;
+  const handleSend = async () => {
     setLoading(true);
+    setError('');
+    setResponse('');
+
     try {
-      const res = await axios.post("/api/ai", { question });
-      setAnswer(res.data.output);
+      const res = await fetch('/api/ai', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [
+            { role: 'user', content: input }
+          ]
+        })
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        const aiMessage = data.choices?.[0]?.message?.content || 'No response';
+        setResponse(aiMessage);
+      } else {
+        setError(data.error || 'Something went wrong');
+      }
     } catch (err) {
-      setAnswer("Error: Could not reach AI assistant.");
+      setError('Failed to connect to AI server');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="border p-4 rounded-lg shadow-md max-w-md mx-auto mt-6 bg-white">
-      <h2 className="text-lg font-bold mb-2">AI Assistant</h2>
+    <div className="p-4 bg-white rounded shadow-md max-w-xl mx-auto">
+      <h2 className="text-xl font-semibold mb-4">AI Assistant</h2>
+      
       <textarea
-        value={question}
-        onChange={(e) => setQuestion(e.target.value)}
-        rows={3}
-        placeholder="Ask something about OPD or procedures..."
-        className="w-full p-2 border rounded"
+        className="w-full p-2 border rounded mb-4"
+        rows="4"
+        placeholder="Ask a question..."
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
       />
+
       <button
-        onClick={askAI}
-        className="mt-2 w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700"
+        onClick={handleSend}
+        disabled={loading}
+        className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
       >
-        {loading ? "Thinking..." : "Ask AI"}
+        {loading ? 'Thinking...' : 'Ask'}
       </button>
 
-      {answer && <p className="mt-4 text-sm text-gray-800">{answer}</p>}
+      {response && (
+        <div className="mt-4 p-3 bg-gray-100 rounded">
+          <strong>AI:</strong> {response}
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-4 text-red-600">
+          <strong>Error:</strong> {error}
+        </div>
+      )}
     </div>
   );
 }

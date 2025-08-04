@@ -1,33 +1,31 @@
-// app/api/ai/route.js
-import { NextResponse } from "next/server";
+// File: app/api/ai/route.js
 
 export async function POST(req) {
-  const { messages } = await req.json();
-
   try {
-    const response = await fetch("http://91.108.112.45:4000/chat/completions", {
-      method: "POST",
+    const body = await req.json();
+
+    const response = await fetch('http://91.108.112.45:4000/v1/chat/completions', {
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.LITELLM_API_KEY}`,
+        'Authorization': `Bearer sk-hZrLR2IIKDrOHKW2B4nIsQ`,
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: process.env.LITELLM_MODEL, // e.g., groq/llama3-8b-8192
-        messages: messages,
-      }),
+        model: 'groq/deepseek-r1-distill-llama-70b',
+        messages: body.messages
+      })
     });
 
     const data = await response.json();
 
-    if (!response.ok) {
-      console.error("LiteLLM error:", data);
-      return NextResponse.json({ error: data }, { status: response.status });
-    }
-
-    return NextResponse.json(data);
-
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
   } catch (error) {
-    console.error("Server error calling LiteLLM:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    return new Response(JSON.stringify({ error: 'Something went wrong with LiteLLM' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }
